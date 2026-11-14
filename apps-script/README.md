@@ -28,6 +28,8 @@ Não use o endpoint do quiz (`diagnostico.nexvita.com/config.js`). Aquele script
    ```
    A resposta esperada é `{"ok":true}`.
 
+O site envia o JSON como `text/plain`. Por ser uma "simple request", não há preflight, então funciona a partir do GitHub Pages. O site lê a resposta, que o Apps Script libera para CORS quando a implantação é **Qualquer pessoa**. Só com `{"ok":true}` ele mostra "Recebido" e dispara o Meta `Lead` e a conversão do Google Ads. Se a resposta for `ok:false`, der erro ou a implantação exigir login, o visitante vê o aviso com o link do WhatsApp e nenhuma conversão é contada.
+
 Enquanto `endpoint` estiver vazio, o formulário em produção não envia nada. Ele mostra "Não foi possível enviar agora" com o link para o WhatsApp e não dispara conversão. Fora de `nexvita.ai` e `www.nexvita.ai` (preview, localhost), o `lead.js` nunca faz POST e nunca carrega pixels.
 
 Ao alterar `Code.gs`, use **Implantar > Gerenciar implantações > Editar > Nova versão** para manter a mesma URL `/exec`.

@@ -3,8 +3,9 @@
  * Web App novo, separado do quiz do diagnostico.nexvita.com (aquele exige
  * especialidade, consentimento e q1–q15; este recebe outros campos e outra planilha).
  *
- * Recebe POST com corpo JSON enviado como text/plain (fetch no-cors) e acrescenta
- * uma linha na aba "Leads". Ver README.md nesta pasta para publicar.
+ * Recebe POST com corpo JSON enviado como text/plain ("simple request", sem preflight) e
+ * acrescenta uma linha na aba "Leads". Responde {ok:true} ou {ok:false,error}; o site lê a
+ * resposta e só mostra o pós-envio e dispara as conversões com ok:true. Ver README.md.
  *
  * Propriedades do script (opcionais, Configurações do projeto > Propriedades do script):
  *   SHEET_ID   id da planilha de destino; vazio = planilha à qual o script está vinculado

@@ -1,5 +1,6 @@
 /* NexVita AI — landing "Sistema sob medida para clínicas": formulário + medição.
-   - O POST vai para NV_LEAD_CONFIG.endpoint (lead-config.js), Web App novo em /apps-script/.
+   - O POST (JSON em text/plain) vai para NV_LEAD_CONFIG.endpoint (lead-config.js), Web App novo em /apps-script/;
+     pós-envio e conversões só quando o script responde {ok:true}.
    - Pixels (Meta 1092369830292295, Google Ads AW-18074257274, GA4 G-KE4MM800WH) só carregam
      em nexvita.ai / www.nexvita.ai e só depois de o visitante aceitar os cookies (LGPD).
    - Em qualquer outro host (preview, localhost) nada é enviado e nenhum evento dispara. */
@@ -41,9 +42,9 @@
     }
   }
 
-  /* Dispara só depois do envio do lead (POST feito), em produção e com consentimento. */
+  /* Dispara só depois de o Apps Script confirmar o lead ({ok:true}), em produção e com consentimento vigente. */
   function fireLead(){
-    if (!IS_PROD || !window.__nvTags) return;
+    if (!IS_PROD || !window.__nvTags || getConsent() !== "sim") return;
     if (window.gtag) window.gtag("event", "conversion", { send_to: AW_ID + "/" + AW_LABEL });
     if (window.fbq) window.fbq("track", "Lead");
   }
@@ -62,8 +63,25 @@
     b.querySelector(".recusar").onclick = function(){ setConsent("nao"); b.remove(); };
   }
 
+  /* Link "Cookies" no rodapé (só em produção, onde há medição): permite rever ou retirar o consentimento. */
+  function cookiesLink(){
+    var nav = document.querySelector(".ftr nav");
+    if (!nav || nav.querySelector("[data-cookies]")) return;
+    var sep = document.createElement("span"); sep.className = "sep"; sep.textContent = "·";
+    var a = document.createElement("a");
+    a.href = "#"; a.setAttribute("data-cookies", ""); a.textContent = "Cookies";
+    a.addEventListener("click", function(ev){
+      ev.preventDefault();
+      try { localStorage.removeItem(CONSENT_KEY); } catch(e){}
+      if (window.__nvTags) { location.reload(); return; } /* descarrega pixels já carregados */
+      cookieBanner();
+    });
+    nav.appendChild(sep); nav.appendChild(a);
+  }
+
   function initTracking(){
     if (!IS_PROD) return;
+    cookiesLink();
     var c = getConsent();
     if (c === "sim") loadTags(); else if (c !== "nao") cookieBanner();
   }
@@ -182,18 +200,29 @@
       return;
     }
 
+    /* JSON como text/plain = "simple request": sem preflight, funciona a partir do GitHub Pages.
+       Não é no-cors: a resposta do Apps Script (que libera CORS em implantações "Qualquer pessoa")
+       é lida, e o pós-envio e as conversões só acontecem com {ok:true} — lead realmente gravado. */
     setSending(true);
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 20000) : null;
     fetch(CFG.endpoint, {
       method: "POST",
-      mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
-      keepalive: true
-    }).then(function(){
-      fireLead();
+      redirect: "follow",
+      signal: ctrl ? ctrl.signal : undefined
+    }).then(function(r){
+      return r.json();
+    }).then(function(res){
+      if (timer) clearTimeout(timer);
       setSending(false);
-      done();
+      if (res && res.ok === true) { fireLead(); done(); return; }
+      showMsg(res && res.error === "invalid_whatsapp"
+        ? "Confira o WhatsApp com DDD e tente de novo, ou fale com a gente pelo WhatsApp."
+        : "Não conseguimos enviar. Tente de novo ou fale com a gente pelo WhatsApp.");
     }).catch(function(){
+      if (timer) clearTimeout(timer);
       setSending(false);
       showMsg("Não conseguimos enviar. Tente de novo ou fale com a gente pelo WhatsApp.");
     });
