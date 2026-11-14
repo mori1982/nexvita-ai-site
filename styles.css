@@ -418,6 +418,22 @@ input:focus,textarea:focus{outline:0;border:2px solid var(--petroleo);padding:12
 .vit-line svg{width:22px;height:22px;flex-shrink:0}
 @media (min-width:640px){.kpis.k4{grid-template-columns:repeat(4,1fr)}}
 
+/* v3-telas-reais — telas reais da clínica de demonstração (proposta, não publicada) */
+.shot{margin:0;background:var(--app-creme);border:1px solid var(--app-areia-300);border-radius:14px;overflow:hidden}
+.shot picture,.shot img{display:block;width:100%;height:auto}
+.stage .shot{position:relative;margin-top:-22%;margin-left:4%;width:96%;box-shadow:8px 8px 0 var(--profundo)}
+.stage-note,.mock-note.real{display:flex;gap:8px;align-items:center;font:500 12px/16px var(--sans)}
+.stage-note{margin-top:16px;color:var(--aqua-claro)}
+.stage-note::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--aqua);flex-shrink:0}
+.tabpanel .shot{box-shadow:10px 10px 0 var(--aqua-claro)}
+@media (min-width:960px){
+  .stage{padding-bottom:24px}
+  .stage .shot{width:104%;margin-left:-4%;margin-top:-30%}
+  .tabpanel.tp-real{grid-template-columns:1fr;gap:32px;align-items:start}
+  .tp-real .tp-copy{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start}
+  .tp-real .tp-copy ul{margin-top:8px}
+}
+
 /* Integração (lead.js): honeypot, aviso de envio e aviso de cookies. Só cores sólidas. */
 .hp{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
 .form-msg{padding:12px 16px;border-radius:10px;background:var(--erro-bg);color:var(--erro);font-size:14px;line-height:20px}
