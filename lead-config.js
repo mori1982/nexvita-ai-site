@@ -1,10 +1,13 @@
 /* NexVita AI — landing "Sistema sob medida para clínicas": destino do formulário.
-   endpoint: URL /exec do Web App do Apps Script em /apps-script/ (ver apps-script/README.md).
-   Enquanto estiver vazio, o formulário NÃO envia nada e mostra o atalho para o WhatsApp.
-   Não use aqui a URL do quiz (diagnostico.nexvita.com): aquele script exige outros campos.
+   endpoint: FormSubmit AJAX, o mesmo destino usado em www.nexvita.com (assets/site.js de lá).
+     O lead.js envia JSON com Accept: application/json e só conta o lead quando a resposta HTTP é ok
+     E String(json.success) === "true".
+   subject: assunto do e-mail (_subject).
+   O antigo Web App do Apps Script (/apps-script/) foi aposentado e não é mais usado.
    stub: true só em preview — simula o pós-envio sem rede.
-   Fora de nexvita.ai / www.nexvita.ai o lead.js nunca faz POST nem carrega pixels. */
+   Fora de nexvita.ai / www.nexvita.ai o lead.js nunca faz POST nem carrega pixels (guarda por hostname). */
 window.NV_LEAD_CONFIG = {
-  endpoint: "",
+  endpoint: "https://formsubmit.co/ajax/mori@nexvita.com",
+  subject: "Lead nexvita.ai – sistema sob medida",
   stub: false
 };

@@ -1,6 +1,7 @@
 /* NexVita AI — landing "Sistema sob medida para clínicas": formulário + medição.
-   - O POST (JSON em text/plain) vai para NV_LEAD_CONFIG.endpoint (lead-config.js), Web App novo em /apps-script/;
-     pós-envio e conversões só quando o script responde {ok:true}.
+   - O POST vai para NV_LEAD_CONFIG.endpoint (lead-config.js): FormSubmit AJAX, mesmo padrão de www.nexvita.com
+     (JSON + Accept: application/json, _subject/_template/_captcha). Pós-envio e conversões só quando a resposta
+     HTTP é ok E String(json.success) === "true".
    - Pixels (Meta 1092369830292295, Google Ads AW-18074257274, GA4 G-KE4MM800WH) só carregam
      em nexvita.ai / www.nexvita.ai e só depois de o visitante aceitar os cookies (LGPD).
    - Em qualquer outro host (preview, localhost) nada é enviado e nenhum evento dispara. */
@@ -42,7 +43,7 @@
     }
   }
 
-  /* Dispara só depois de o Apps Script confirmar o lead ({ok:true}), em produção e com consentimento vigente. */
+  /* Dispara só depois de o FormSubmit confirmar o lead (HTTP ok + success "true"), em produção e com consentimento vigente. */
   function fireLead(){
     if (!IS_PROD || !window.__nvTags || getConsent() !== "sim") return;
     if (window.gtag) window.gtag("event", "conversion", { send_to: AW_ID + "/" + AW_LABEL });
@@ -179,6 +180,10 @@
 
     var u = utmParams();
     var payload = {
+      _subject: CFG.subject || "Lead nexvita.ai – sistema sob medida",
+      _template: "table",
+      _captcha: "false",
+      _honey: val("website"),
       form: "sistema_sob_medida",
       nome: val("nome").slice(0, 120),
       whatsapp: wa,
@@ -200,27 +205,24 @@
       return;
     }
 
-    /* JSON como text/plain = "simple request": sem preflight, funciona a partir do GitHub Pages.
-       Não é no-cors: a resposta do Apps Script (que libera CORS em implantações "Qualquer pessoa")
-       é lida, e o pós-envio e as conversões só acontecem com {ok:true} — lead realmente gravado. */
+    /* FormSubmit AJAX (mesmo padrão de www.nexvita.com): JSON com Accept: application/json; o FormSubmit
+       libera CORS. Pós-envio e conversões só com HTTP ok E success "true"; qualquer outra resposta, erro
+       de rede/CORS ou timeout mostra o aviso com o WhatsApp e não mede nada. */
     setSending(true);
     var ctrl = window.AbortController ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 20000) : null;
     fetch(CFG.endpoint, {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(payload),
-      redirect: "follow",
       signal: ctrl ? ctrl.signal : undefined
     }).then(function(r){
-      return r.json();
+      return r.json().then(function(j){ return { httpOk: !!r.ok, json: j }; });
     }).then(function(res){
       if (timer) clearTimeout(timer);
       setSending(false);
-      if (res && res.ok === true) { fireLead(); done(); return; }
-      showMsg(res && res.error === "invalid_whatsapp"
-        ? "Confira o WhatsApp com DDD e tente de novo, ou fale com a gente pelo WhatsApp."
-        : "Não conseguimos enviar. Tente de novo ou fale com a gente pelo WhatsApp.");
+      if (res.httpOk && res.json && String(res.json.success) === "true") { fireLead(); done(); return; }
+      showMsg("Não conseguimos enviar. Tente de novo ou fale com a gente pelo WhatsApp.");
     }).catch(function(){
       if (timer) clearTimeout(timer);
       setSending(false);
